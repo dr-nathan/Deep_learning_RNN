@@ -11,7 +11,7 @@ from tqdm import tqdm
 device = torch.device('cpu')
 
 # load iMDB data
-(x_train, y_train), (x_val, y_val), (i2w, w2i), numcls = load_imdb(final=False)
+(x_train, y_train), (x_val, y_val), (i2w, w2i), numcls = load_imdb(final=True) # for val set final to false
 # every x is a list of words, every y is a single int label
 
 # add start and end tokens to every x
@@ -33,8 +33,10 @@ y_val = [torch.tensor(y, device=device) for y in y_val_sorted]
 # get max sequence length
 maxlen = max(len(x) for x in x_train)
 print(f'max sequence length of train: {maxlen}')
+print('average sequence length of train:', sum(len(x) for x in x_train) / len(x_train))
 maxlen = max(len(x) for x in x_val)
 print(f'max sequence length of val: {maxlen}')
+print(f'average sequence length of val:', sum(len(x) for x in x_val) / len(x_val))
 
 batch_size = 32
 
@@ -194,16 +196,20 @@ def training_loop(n_epochs, optimizer, model, loss_fn, train_loader, val_loader,
                     val_acc.append(correct / total)
                     val_loss.append(val_running_loss / plot_interval)
 
-    plt.plot(val_acc, label='val_acc')
-    plt.plot(train_acc, label='train_acc')
+    print(f'Finished Training {model.__class__.__name__}')
+    print('final train acc:', train_acc[-1])
+    print('final test acc:', val_acc[-1])
+
+    plt.plot(val_acc, label='test acc')
+    plt.plot(train_acc, label='train acc')
     plt.title(f'{model.__class__.__name__}: accuracy over time')
     plt.xlabel('batch x 100')
     plt.ylabel('accuracy')
     plt.legend()
     plt.show()
 
-    plt.plot(val_loss, label='val_loss')
-    plt.plot(train_loss, label='train_loss')
+    plt.plot(val_loss, label='test loss')
+    plt.plot(train_loss, label='train loss')
     plt.title(f'{model.__class__.__name__}: loss over time')
     plt.xlabel('batch x 100')
     plt.ylabel('loss')
@@ -218,7 +224,8 @@ def training_loop(n_epochs, optimizer, model, loss_fn, train_loader, val_loader,
 
 
 n_epochs = 4
-lr = 0.001
+lr = 0.0005
+
 
 ### MLP ###
 model = MLP(len(i2w), embedding_dim=300, hidden_dim=300, outsize=2)
